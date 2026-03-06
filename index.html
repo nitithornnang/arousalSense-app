@@ -8,6 +8,7 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#101014">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ArousalSense">
     <link rel="apple-touch-icon" href="A logo-2.png">
@@ -36,7 +37,6 @@
         .input-group input:focus { border-color: #4da6ff; }
         .age-inputs { display: flex; gap: 10px; }
         
-        /* เพิ่มสไตล์สำหรับปุ่มยา และ DB */
         .checkbox-group { display: flex; align-items: center; gap: 10px; background: #2a2a35; padding: 10px; border-radius: 8px; border: 1px solid #444; margin-bottom: 15px; width: 100%; cursor: pointer; box-sizing: border-box;}
         .checkbox-group input { width: 18px; height: 18px; accent-color: #4da6ff; margin: 0; }
         .db-controls { display: flex; gap: 10px; width: 100%; }
@@ -75,7 +75,6 @@
         .chart-container { flex-grow: 1; width: 100%; position: relative; background: #2a2a35; border-radius: 10px; padding: 10px; box-sizing: border-box; box-shadow: inset 0 0 10px rgba(0,0,0,0.2); min-height: 120px; }
         .footer { font-size: 11px; color: #666; text-align: center; margin-top: 10px; border-top: 1px solid #333; padding-top: 5px; flex-shrink: 0; }
         
-        /* สไตล์เดิมของ Modal โหลด/น้องหมี */
         .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 100; }
         .connect-modal { background: #2a2a35; padding: 30px 20px; border-radius: 20px; text-align: center; width: 80%; max-width: 350px; box-shadow: 0 10px 30px rgba(77, 166, 255, 0.3); border: 3px solid #4da6ff; color: white; animation: popIn 0.4s ease; display: flex; flex-direction: column; align-items: center; }
         .connect-icon-wrapper { position: relative; width: 120px; height: 120px; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; }
@@ -92,7 +91,6 @@
         .timer-circle { width: 100px; height: 100px; border-radius: 50%; background: conic-gradient(#00e676 var(--progress, 100%), #e0e0e0 0deg); display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.15); transition: background 0.5s linear;}
         .timer-inner { width: 80px; height: 80px; background: #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 36px; font-weight: bold; color: #00c853; box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);}
         
-        /* สไตล์ใหม่สำหรับระบบ Blue Zone */
         .blue-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 25, 50, 0.95); backdrop-filter: blur(8px); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 9000; text-align: center; padding: 20px; animation: fadeIn 0.3s ease; border: 5px solid #4da6ff;}
         .blue-icon { font-size: 80px; margin-bottom: 20px; animation: float 2s infinite ease-in-out; }
         .blue-overlay h1 { color: #4da6ff; font-size: 28px; margin-bottom: 10px; }
@@ -268,9 +266,6 @@
     <script>
         console.log("%c ArousalSense PWA System \n Copyright © 2026 NITITHORN NANGLAE ", "background: #222; color: #4da6ff; font-size: 16px; font-weight: bold; border-radius: 4px;");
 
-        // ========================================================
-        // 🚀 PWA Service Worker Registration
-        // ========================================================
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
@@ -306,7 +301,6 @@
             }
         });
 
-        // --- ฐานข้อมูล Local DB ---
         let db = JSON.parse(localStorage.getItem('arousal_db_v3')) || {};
         let isMedicatedToday = false;
         let historicalBaseline = null;
@@ -364,8 +358,12 @@
         let childName = "", childYears = 0, childMonths = 0;
         let limitYellowMultiplier = 0.7, limitRedMultiplier = 0.4;
         let audioCtx = null;
+        
         let bleDevice = null; 
         let isReconnecting = false; 
+        let isIntentionalDisconnect = false; 
+        let watchdogTimer = null;            
+        let artifactCount = 0; // เพิ่มตัวแปรเช็กสัญญาณกระโดดป้องกันกราฟค้างถาวร
 
         const WINDOW_SIZE = 30;
         const CALIBRATION_DURATION = 60; 
@@ -378,14 +376,13 @@
         let isCalibrated = false;
         let calibrationStartTime = null;
         let calibrationData = [];
-        let calibrationDataHR = []; // เก็บ HR ของวันนี้ด้วย
+        let calibrationDataHR = []; 
         let baselineRmssd = 0;
-        let dailyBaselineHR = 0; // Baseline HR ของวันนี้
+        let dailyBaselineHR = 0; 
         let limitYellow = 0, limitRed = 0;
         let currentHrv = 0;
         let lastState = "";
         
-        // ตัวแปรสำหรับ Blue Zone
         let isPreCheckMode = false;
         let preCheckTimer = 0;
         let preCheckDataHR = [];
@@ -428,6 +425,7 @@
                 let confirmReset = confirm("⚠️ คุณยังไม่ได้กดบันทึกข้อมูล\nต้องการลบข้อมูลและเปลี่ยนคนใช่หรือไม่?");
                 if (!confirmReset) return; 
             }
+            isIntentionalDisconnect = true; 
             if (bleDevice && bleDevice.gatt.connected) bleDevice.gatt.disconnect();
             location.reload(); 
         };
@@ -447,20 +445,30 @@
             }
         }
 
-        // --- เริ่มเข้าใช้งาน ---
         document.getElementById('startAppBtn').onclick = function() {
             const errorMsg = document.getElementById('errorMsg');
             errorMsg.style.display = 'none';
 
             let years = parseInt(document.getElementById('inputYears').value);
             let months = parseInt(document.getElementById('inputMonths').value || "0");
-            childName = document.getElementById('inputName').value || "น้อง";
+            
+            // เพิ่มคำสั่ง .trim() ป้องกันปัญหาการเคาะเว้นวรรคท้ายชื่อ
+            childName = document.getElementById('inputName').value.trim() || "น้อง";
             isMedicatedToday = document.getElementById('inputMed').checked;
 
             if (isNaN(years) || years < 1) {
                 errorMsg.innerText = "⚠️ กรุณาพิมพ์ตัวเลขในช่อง 'ปี' ให้ถูกต้องครับ";
                 errorMsg.style.display = 'block';
                 return;
+            }
+
+            // เพิ่มคำสั่งขอเปิดหน้าจอค้างไว้ตลอดการใช้งาน (Wake Lock API)
+            try {
+                navigator.wakeLock.request('screen').then(lock => {
+                    console.log("Wake Lock is active! หน้าจอจะไม่ดับ");
+                });
+            } catch (err) {
+                console.log("Wake Lock API not supported");
             }
 
             childYears = years; childMonths = months;
@@ -470,17 +478,14 @@
             document.getElementById('childNameDisp').innerText = `ผู้รับการฝึก: ${childName}`;
             document.getElementById('childAgeDisp').innerText = `อายุ: ${childYears} ปี ${childMonths} เดือน ${isMedicatedToday?"(มียา)":""}`;
             
-            // ตรวจสอบประวัติเดิม
             let dbKey = `${childName}_med_${isMedicatedToday}`;
             historicalBaseline = db[dbKey];
             
             document.getElementById('setupScreen').style.display = 'none';
 
             if (!historicalBaseline) {
-                // ไม่มีประวัติ -> เปิดหน้าให้ผู้ใช้กดประเมินด้วยตา
                 document.getElementById('precheckScreen').style.display = 'block';
             } else {
-                // มีประวัติ -> เข้า Dashboard โหมด Precheck อัตโนมัติ 30 วิ
                 document.getElementById('mainDashboard').style.display = 'flex'; 
                 isPreCheckMode = true;
             }
@@ -489,7 +494,6 @@
             try { const AudioContext = window.AudioContext || window.webkitAudioContext; if(AudioContext) audioCtx = new AudioContext(); } catch(e) {}
         };
 
-        // ฟังก์ชันระบบ Blue Zone ใหม่ (ทำงานทับบนโครงสร้างเดิม)
         function triggerBlueIntervention(source) {
             if (source === 'precheck') {
                 document.getElementById('precheckScreen').style.display = 'none';
@@ -512,7 +516,6 @@
             document.getElementById('blueZoneModal').style.display = 'none';
         }
 
-        // --- ระบบเสียงและกราฟเดิม ---
         function playWarningBeep() {
             if (!audioCtx) return;
             let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
@@ -563,8 +566,21 @@
             return Math.sqrt(sumSq / (rrs.length - 1));
         }
 
+        function resetWatchdog() {
+            clearTimeout(watchdogTimer);
+            watchdogTimer = setTimeout(() => {
+                console.warn("Watchdog: ไม่ได้รับสัญญาณข้อมูลเกิน 5 วินาที! สั่งรีเซ็ตการเชื่อมต่อ...");
+                if (bleDevice && bleDevice.gatt.connected) {
+                    bleDevice.gatt.disconnect(); 
+                } else if (!isReconnecting && bleDevice) {
+                    onDisconnected(); 
+                }
+            }, 5000); 
+        }
+
         document.getElementById('connectBtn').onclick = async function() {
             if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            isIntentionalDisconnect = false; 
             
             try {
                 if (!bleDevice) {
@@ -628,10 +644,16 @@
             
             isReconnecting = false;
             document.getElementById('connectBtn').disabled = false;
+            
+            resetWatchdog(); 
         }
 
         async function onDisconnected() {
+            clearTimeout(watchdogTimer); 
             console.log("Device disconnected!");
+            
+            if (isIntentionalDisconnect) return; 
+            
             playDisconnectAlarm();
             
             if (isReconnecting) return;
@@ -647,18 +669,23 @@
             btn.style.backgroundColor = "#ff9800"; 
             btn.disabled = true;
 
-            while (isReconnecting && bleDevice && !bleDevice.gatt.connected) {
+            let retryDelay = 2000; 
+
+            while (isReconnecting && bleDevice && !bleDevice.gatt.connected && !isIntentionalDisconnect) {
                 try {
+                    await new Promise(resolve => setTimeout(resolve, retryDelay));
                     await connectGATTServer();
                     break; 
                 } catch (error) {
-                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    console.log("Reconnect failed, retrying in", retryDelay);
+                    retryDelay = Math.min(retryDelay * 1.5, 10000); 
                 }
             }
         }
 
-        // --- Logic หลักผสมผสาน ---
         function handleData(event) {
+            resetWatchdog(); 
+
             document.getElementById('connectModal').style.display = 'none';
 
             const val = event.target.value;
@@ -668,8 +695,15 @@
             let hr = (flags & 0x01) ? val.getUint16(index, true) : val.getUint8(index);
             index += (flags & 0x01) ? 2 : 1;
 
-            // กรองสัญญาณรบกวน (Artifact rejection)
-            if (lastValidHR !== null && Math.abs(hr - lastValidHR) > 30) return;
+            // แก้ไขปัญหากราฟหัวใจค้างถาวร (Artifact Filter Deadlock)
+            if (lastValidHR !== null && Math.abs(hr - lastValidHR) > 30) {
+                artifactCount++;
+                if (artifactCount < 3) { // ถ้ายอมให้กระโดดแค่ 1-2 วิ ให้ตัดทิ้งไปก่อน
+                    return; 
+                }
+            }
+            // ถ้าค่ากระโดดค้างเกิน 3 วิ หรือค่าปกติ ให้รีเซ็ตตัวนับและอัปเดตค่าใหม่
+            artifactCount = 0;
             lastValidHR = hr;
 
             document.getElementById('hrDisplay').innerText = hr;
@@ -690,21 +724,18 @@
                 let currentTime = Date.now() / 1000;
                 const statusText = document.getElementById('statusText');
 
-                // 1. ถ้าระบบกำลังล็อกด้วย Blue Zone (Intervention)
                 if (document.getElementById('blueZoneModal').style.display === 'flex' && historicalBaseline) {
                     if (hr >= (historicalBaseline.hr * 0.90)) {
                         blueDebounceCounter++;
                         if (blueDebounceCounter >= 5) {
                             closeBlueIntervention();
                             blueDebounceCounter = 0;
-                            // ถ้ายังไม่เคยวัดน้องหมี ก็ให้เริ่มวัดเลย
                             if (!isCalibrated && !calibrationStartTime) calibrationStartTime = currentTime;
                         }
                     } else { blueDebounceCounter = 0; }
-                    return; // หยุดทำงานจนกว่าจะพ้น Blue Zone
+                    return; 
                 }
 
-                // 2. ถ้าอยู่ในโหมด Pre-Check 30 วิ (กรณีมีประวัติ)
                 if (isPreCheckMode && !isCalibrated) {
                     preCheckDataHR.push(hr);
                     preCheckTimer++;
@@ -721,14 +752,13 @@
                     return; 
                 }
 
-                // 3. เริ่ม Calibrate น้องหมี (ถ้ายังไม่ Calibrate)
                 if (!isCalibrated) {
                     if (!calibrationStartTime) calibrationStartTime = currentTime;
                     let elapsed = currentTime - calibrationStartTime;
                     let remainingSec = Math.max(0, Math.ceil(CALIBRATION_DURATION - elapsed));
                     
                     calibrationData.push(currentHrv);
-                    calibrationDataHR.push(hr); // เก็บ HR ของวันนี้ด้วย
+                    calibrationDataHR.push(hr); 
                     statusText.innerText = `CALIBRATING... ${remainingSec}s`;
                     setTrafficLight('all'); 
                     
@@ -755,7 +785,6 @@
                         checkAlarm();
                     }
                 } 
-                // 4. เข้าสู่กราฟปกติ
                 else {
                     hrvHistory.push(currentHrv);
                     if (hrvHistory.length > VISIBLE_POINTS) hrvHistory.shift(); 
@@ -765,14 +794,13 @@
                         arousalChart.data.datasets[0].data = hrvHistory.concat(nullArray);
                     }
 
-                    // ดักจับ Blue zone ระหว่างฝึก
                     if (hr < (dailyBaselineHR * 0.85) && currentHrv >= limitYellow) {
                         blueDebounceCounter++;
                         if (blueDebounceCounter >= 5) {
                             triggerBlueIntervention('auto');
                             historicalBaseline = { hr: dailyBaselineHR };
                             blueDebounceCounter = 0;
-                            return; // ตัดรอบ
+                            return; 
                         }
                     } else {
                         blueDebounceCounter = 0;
@@ -829,7 +857,6 @@
             }
         }
 
-        // --- ส่วนการบันทึกข้อมูล (เพิ่มอัปเดต Local Storage) ---
         document.getElementById('exportBtn').onclick = function() {
             if (researchDataLog.length === 0) {
                 alert("❌ ยังไม่มีข้อมูลให้บันทึกครับ");
@@ -837,7 +864,6 @@
             }
 
             try {
-                // 1. อัปเดตฐานข้อมูล Baseline เดิม
                 let dbKey = `${childName}_med_${isMedicatedToday}`;
                 let oldData = db[dbKey] || { hr: 0, hrv: 0, count: 0 };
                 let newCount = oldData.count + 1;
@@ -848,7 +874,6 @@
                 };
                 saveDB();
 
-                // 2. ส่งออกไฟล์ CSV เหมือนเดิมเป๊ะ
                 let csvContent = "\uFEFFPatientName,PatientAge,Date,Time,Timestamp_MS,ArousalLevel,Heart Rate (BPM),HRV RMSSD (ms)\n";
                 let ageFormatted = `${childYears}Y${childMonths}M`;
 
