@@ -3,193 +3,316 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ArousalSense: OT Monitor (Pro)</title>
+    <title>ArousalSense: OT Monitor</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#101014">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ArousalSense">
+    <link rel="apple-touch-icon" href="A logo-2.png">
     <script src="chart.js"></script>
     <script src="chartjs-plugin-annotation.min.js"></script>
 
     <style>
-        * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; box-sizing: border-box;}
+        * { -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
         input { -webkit-user-select: auto; user-select: auto; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #101014; color: #ffffff; margin: 0; padding: 0; height: 100dvh; width: 100vw; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+        .app-logo { max-height: 45px; object-fit: contain; margin-bottom: 5px; }
+        .setup-logo { max-height: 60px; margin-bottom: 10px; }
+        #lockScreen { background: #1e1e24; padding: 40px 30px; border-radius: 15px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8); text-align: center; width: 90%; max-width: 350px; border: 2px solid #4da6ff; z-index: 9999; display: flex; flex-direction: column; align-items: center;}
+        #lockScreen h1 { color: #4da6ff; margin: 0 0 5px 0; font-size: 28px; }
+        #lockScreen p { color: #888; font-size: 14px; margin-bottom: 25px; }
+        .pin-input { letter-spacing: 15px; font-size: 24px; font-weight: bold; text-align: center; width: 80%; padding: 15px; border-radius: 10px; border: 2px solid #444; background: #2a2a35; color: white; margin-bottom: 20px; outline: none; transition: border 0.3s; }
+        .pin-input:focus { border-color: #00e676; }
+        #pinError { color: #ff4d4d; font-size: 14px; font-weight: bold; margin-bottom: 15px; display: none; }
+        .btn-unlock { width: 100%; padding: 15px; font-size: 18px; font-weight: bold; color: white; background-color: #4da6ff; border: none; border-radius: 10px; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(77, 166, 255, 0.3); }
         
-        /* General Modals & Screens */
-        .screen { display: none; width: 100%; max-width: 700px; height: 100%; flex-direction: column; background: #1e1e24; position: relative; }
-        .center-box { background: #1e1e24; padding: 30px; border-radius: 15px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8); text-align: center; width: 90%; max-width: 400px; border: 2px solid #4da6ff; z-index: 10; display: flex; flex-direction: column; align-items: center; }
-        
-        /* Inputs & Buttons */
-        .input-group { margin-bottom: 15px; text-align: left; width: 100%; }
+        #setupScreen, #precheckScreen { background: #1e1e24; padding: 25px; border-radius: 15px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5); text-align: center; width: 90%; max-width: 400px; border: 1px solid #333; display: none; position: absolute;}
+        #setupScreen h1 { color: #4da6ff; margin: 0 0 5px 0; font-size: 24px; }
+        .input-group { margin-bottom: 15px; text-align: left; }
         .input-group label { display: block; margin-bottom: 5px; color: #bbb; font-size: 14px; }
-        .input-group input, .input-group select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #444; background: #2a2a35; color: white; font-size: 16px; outline: none; }
+        .input-group input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #444; background: #2a2a35; color: white; font-size: 16px; box-sizing: border-box; outline: none; }
         .input-group input:focus { border-color: #4da6ff; }
-        .row-inputs { display: flex; gap: 10px; }
-        .checkbox-group { display: flex; align-items: center; gap: 10px; background: #2a2a35; padding: 12px; border-radius: 8px; border: 1px solid #444; margin-bottom: 15px; width: 100%; cursor: pointer;}
-        .checkbox-group input { width: 20px; height: 20px; accent-color: #4da6ff; }
+        .age-inputs { display: flex; gap: 10px; }
         
-        button { cursor: pointer; transition: 0.2s; outline: none; }
-        button:active { transform: scale(0.98); }
-        .btn-primary { width: 100%; padding: 15px; font-size: 16px; font-weight: bold; color: white; background-color: #007bff; border: none; border-radius: 8px; margin-bottom: 10px; }
-        .btn-success { background-color: #00e676; color: #101014; }
-        .btn-danger { background-color: #ff4d4d; color: white; }
-        .btn-outline { background: transparent; color: #aaa; border: 1px solid #555; padding: 10px; border-radius: 8px; width: 100%; margin-bottom: 10px; }
-        
-        /* Dashboard Elements */
-        .dash-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #333; padding: 10px 15px; }
-        .dash-content { padding: 10px 15px; flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        /* เพิ่มสไตล์สำหรับปุ่มยา และ DB */
+        .checkbox-group { display: flex; align-items: center; gap: 10px; background: #2a2a35; padding: 10px; border-radius: 8px; border: 1px solid #444; margin-bottom: 15px; width: 100%; cursor: pointer; box-sizing: border-box;}
+        .checkbox-group input { width: 18px; height: 18px; accent-color: #4da6ff; margin: 0; }
+        .db-controls { display: flex; gap: 10px; width: 100%; }
+
+        #errorMsg { color: #ff4d4d; font-size: 14px; margin-bottom: 15px; display: none; font-weight: bold; background: rgba(255, 77, 77, 0.1); padding: 10px; border-radius: 8px;}
+        .btn-lock-app { background: transparent; color: #888; border: 1px solid #444; padding: 10px; border-radius: 8px; font-size: 14px; cursor: pointer; margin-top: 15px; width: 100%;}
+        .dashboard { width: 100%; max-width: 700px; height: 100%; background: #1e1e24; padding: 10px 15px; box-sizing: border-box; display: none; flex-direction: column; border-left: 1px solid #333; border-right: 1px solid #333; position: relative; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #333; padding-bottom: 8px; margin-bottom: 10px; flex-shrink: 0; }
+        .header-title { text-align: left; }
+        .header-title h1 { margin: 0; color: #4da6ff; font-size: 20px; display: flex; align-items: center; gap: 8px; }
+        .child-info { display: flex; flex-direction: column; gap: 3px; margin-top: 5px; text-align: left;}
+        #childNameDisp { color: #00e676; font-size: 15px; font-weight: bold; }
+        #childAgeDisp { color: #aaa; font-size: 12px; }
+        .header-actions { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+        .battery-box { display: none; align-items: center; gap: 5px; background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 12px; border: 1px solid #444; font-size: 12px; color: #00e676; font-weight: bold; box-shadow: inset 0 0 5px rgba(0,0,0,0.5);}
+        .battery-icon { font-size: 14px; }
+        .action-buttons { display: flex; gap: 8px; }
+        .icon-btn { background: #2a2a35; color: #888; border: 1px solid #444; border-radius: 8px; width: 42px; height: 42px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s ease; padding: 0;}
+        .icon-btn:active { background: #444; transform: scale(0.95); }
+        .icon-btn svg { width: 22px; height: 22px; fill: currentColor; }
+        button.btn-main { width: 100%; padding: 12px; font-size: 16px; font-weight: bold; color: white; background-color: #007bff; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s; flex-shrink: 0; margin-bottom: 10px;}
+        button.btn-main:disabled { opacity: 0.7; cursor: not-allowed; }
+        .btn-start { background-color: #00e676; color: #101014; margin-top: 10px; width: 100%; padding: 12px; border:none; border-radius:8px; font-weight:bold; font-size:16px;}
+        .traffic-panel { width: 100%; background: #2a2a35; border-radius: 12px; padding: 10px; display: flex; justify-content: center; align-items: center; border: 2px solid #444; flex-shrink: 0; margin-bottom: 10px; box-sizing: border-box;}
+        .light-box { display: flex; flex-direction: row; gap: 20px; background: #111; padding: 10px 25px; border-radius: 40px; box-shadow: inset 0 0 10px rgba(0,0,0,0.8); }
+        .bulb { width: 50px; height: 50px; border-radius: 50%; background: #333; opacity: 0.25; transition: all 0.3s ease; box-shadow: inset 0 4px 5px rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-size: 28px; }
+        .bulb.red.active { background: #ff4d4d; opacity: 1; box-shadow: 0 0 25px #ff4d4d, inset 0 0 10px rgba(255,255,255,0.5); }
+        .bulb.yellow.active { background: #ffeb3b; opacity: 1; box-shadow: 0 0 25px #ffeb3b, inset 0 0 10px rgba(255,255,255,0.5); }
+        .bulb.green.active { background: #00e676; opacity: 1; box-shadow: 0 0 25px #00e676, inset 0 0 10px rgba(255,255,255,0.5); }
         .box-container { display: flex; gap: 10px; flex-shrink: 0; margin-bottom: 10px; }
         .box { flex: 1; background: #2a2a35; border-radius: 10px; padding: 10px; text-align: center; border-bottom: 4px solid #555; }
-        .box .value { font-size: 30px; font-weight: bold; margin: 2px 0; }
-        .chart-container { flex-grow: 1; width: 100%; background: #2a2a35; border-radius: 10px; padding: 10px; min-height: 150px; }
+        .box h2 { margin: 0 0 2px 0; font-size: 13px; color: #aaa; text-transform: uppercase; }
+        .box .value { font-size: 30px; font-weight: bold; margin: 2px 0; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .box .unit { font-size: 11px; color: #888; }
+        #statusText { font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 10px; padding: 8px; background: #2a2a35; border-radius: 8px; border-bottom: 3px solid #555; flex-shrink: 0;}
+        .chart-container { flex-grow: 1; width: 100%; position: relative; background: #2a2a35; border-radius: 10px; padding: 10px; box-sizing: border-box; box-shadow: inset 0 0 10px rgba(0,0,0,0.2); min-height: 120px; }
+        .footer { font-size: 11px; color: #666; text-align: center; margin-top: 10px; border-top: 1px solid #333; padding-top: 5px; flex-shrink: 0; }
         
-        /* Traffic Lights */
-        .traffic-panel { background: #2a2a35; border-radius: 12px; padding: 10px; display: flex; justify-content: center; border: 2px solid #444; margin-bottom: 10px; }
-        .light-box { display: flex; gap: 20px; background: #111; padding: 10px 25px; border-radius: 40px; }
-        .bulb { width: 40px; height: 40px; border-radius: 50%; background: #333; opacity: 0.3; display: flex; justify-content: center; align-items: center; font-size: 20px; transition: 0.3s; }
-        .bulb.active.red { background: #ff4d4d; opacity: 1; box-shadow: 0 0 20px #ff4d4d; }
-        .bulb.active.yellow { background: #ffeb3b; opacity: 1; box-shadow: 0 0 20px #ffeb3b; }
-        .bulb.active.green { background: #00e676; opacity: 1; box-shadow: 0 0 20px #00e676; }
+        /* สไตล์เดิมของ Modal โหลด/น้องหมี */
+        .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 100; }
+        .connect-modal { background: #2a2a35; padding: 30px 20px; border-radius: 20px; text-align: center; width: 80%; max-width: 350px; box-shadow: 0 10px 30px rgba(77, 166, 255, 0.3); border: 3px solid #4da6ff; color: white; animation: popIn 0.4s ease; display: flex; flex-direction: column; align-items: center; }
+        .connect-icon-wrapper { position: relative; width: 120px; height: 120px; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; }
+        .connect-radar { position: absolute; width: 100%; height: 100%; border-radius: 50%; border: 3px solid transparent; border-top-color: #4da6ff; animation: radarSpin 1.5s infinite linear; }
+        .connect-radar::before { content: ''; position: absolute; top: -3px; left: -3px; right: -3px; bottom: -3px; border-radius: 50%; border: 3px solid transparent; border-right-color: #00e676; animation: radarSpin 2.5s infinite linear reverse; }
+        .connect-center-icon { z-index: 2; animation: pulseBeat 1.5s infinite; display: flex; align-items: center; justify-content: center;}
+        .strap-svg { width: 70px; height: 35px; }
+        .connect-title { font-size: 20px; color: #4da6ff; margin: 0 0 10px 0; font-weight: bold;}
+        .connect-sub { font-size: 14px; color: #aaa; margin: 0;}
+        .calib-modal { background: #fdfbf7; padding: 30px 20px; border-radius: 25px; text-align: center; width: 85%; max-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 5px solid #fff; animation: popIn 0.5s ease; color: #333; display: flex; flex-direction: column; align-items: center;}
+        .bear-svg { width: 130px; height: 130px; margin-bottom: 10px; animation: gentleBounce 2s infinite ease-in-out; }
+        .calib-title { font-size: 22px; font-weight: bold; color: #5D4037; margin: 0 0 5px 0; }
+        .calib-text { font-size: 15px; margin: 0 0 20px 0; line-height: 1.4; color: #8D6E63; font-weight: bold;}
+        .timer-circle { width: 100px; height: 100px; border-radius: 50%; background: conic-gradient(#00e676 var(--progress, 100%), #e0e0e0 0deg); display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.15); transition: background 0.5s linear;}
+        .timer-inner { width: 80px; height: 80px; background: #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 36px; font-weight: bold; color: #00c853; box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);}
         
-        /* Blue Zone Intervention Overlay */
+        /* สไตล์ใหม่สำหรับระบบ Blue Zone */
         .blue-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 25, 50, 0.95); backdrop-filter: blur(8px); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 9000; text-align: center; padding: 20px; animation: fadeIn 0.3s ease; border: 5px solid #4da6ff;}
         .blue-icon { font-size: 80px; margin-bottom: 20px; animation: float 2s infinite ease-in-out; }
         .blue-overlay h1 { color: #4da6ff; font-size: 28px; margin-bottom: 10px; }
         .blue-overlay p { color: #ddd; font-size: 18px; line-height: 1.5; margin-bottom: 30px; }
-        
-        /* Calibration & Loading Modals */
-        .modal-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display:none; justify-content:center; align-items:center; z-index: 1000; }
-        .db-controls { display: flex; gap: 10px; width: 100%; margin-top: 10px; }
-        
+
+        @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes radarSpin { 100% { transform: rotate(360deg); } }
+        @keyframes pulseBeat { 0% { transform: scale(0.95); } 50% { transform: scale(1.05); } 100% { transform: scale(0.95); } }
+        @keyframes gentleBounce { 0% { transform: translateY(0px); } 50% { transform: translateY(-8px); } 100% { transform: translateY(0px); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
     </style>
 </head>
 <body>
 
-    <div id="screen-lock" class="center-box">
-        <h1 style="color:#4da6ff; margin-bottom: 5px;">🔒 ArousalSense</h1>
-        <p style="color:#888; margin-bottom: 20px;">Restricted Clinical Access Only</p>
-        <input type="password" id="pinCode" placeholder="PIN" inputmode="numeric" maxlength="4" style="font-size: 24px; text-align: center; letter-spacing: 10px; padding: 10px; border-radius: 8px; border: 2px solid #444; background: #2a2a35; color: white; width: 80%; margin-bottom: 15px;">
-        <button class="btn-primary" onclick="unlockApp()">ปลดล็อกระบบ</button>
+    <div id="lockScreen">
+        <img src="A logo-2.png" alt="Logo" class="setup-logo" onerror="this.style.display='none'">
+        <h1>🔒 ArousalSense</h1>
+        <p>Restricted Clinical Access Only</p>
+        <div id="pinError">❌ รหัสผ่านไม่ถูกต้อง</div>
+        <input type="password" id="pinCode" class="pin-input" placeholder="PIN" inputmode="numeric" maxlength="4">
+        <button class="btn-unlock" id="unlockBtn" type="button">ปลดล็อกระบบ</button>
     </div>
 
-    <div id="screen-setup" class="center-box" style="display:none; max-width: 450px;">
-        <h2 style="color:#4da6ff; margin: 0 0 20px 0;">ข้อมูลผู้รับการฝึก (Patient Setup)</h2>
-        
+    <div id="setupScreen">
+        <img src="A logo-2.png" alt="Logo" class="setup-logo" onerror="this.style.display='none'">
+        <h1>ArousalSense</h1>
+        <p style="color:#aaa; margin-bottom:20px;">Pediatric OT Monitor</p>
+        <div id="errorMsg"></div>
         <div class="input-group">
-            <label>ชื่อ/รหัสผู้รับการฝึก (Patient ID):</label>
+            <label>ชื่อเล่นน้อง (Nickname):</label>
             <input type="text" id="inputName" placeholder="ระบุชื่อให้ตรงกับประวัติเดิม">
         </div>
         <div class="input-group">
-            <label>อายุ (Age):</label>
-            <div class="row-inputs">
-                <input type="number" id="inputYears" placeholder="ปี" min="1">
+            <label>อายุ (Age): <span style="color:#ff4d4d;">*ระบุเป็นปี</span></label>
+            <div class="age-inputs">
+                <input type="number" id="inputYears" placeholder="ปี" min="1" max="18">
                 <input type="number" id="inputMonths" placeholder="เดือน" min="0" max="11">
             </div>
         </div>
         
         <label class="checkbox-group">
             <input type="checkbox" id="inputMed">
-            <span>ทานยาเกี่ยวกับสมาธิ/ปรับพฤติกรรมในวันนี้</span>
+            <span style="font-size:14px; color:#ddd;">ทานยาเกี่ยวกับสมาธิ/ปรับพฤติกรรมในวันนี้</span>
         </label>
 
-        <button class="btn-primary btn-success" onclick="startPreCheck()">เข้าสู่ระบบมอนิเตอร์</button>
-        <button class="btn-outline" onclick="resetPatientBaseline()" style="color:#ffeb3b; border-color:#ffeb3b;">⚠️ ล้างประวัติค่า Baseline ของเด็กคนนี้</button>
+        <button class="btn-start" id="startAppBtn" type="button">เข้าสู่ระบบมอนิเตอร์</button>
+        <button class="btn-lock-app" id="resetDbBtn" type="button" style="color:#ffeb3b; border-color:#ffeb3b;">⚠️ ล้างประวัติค่า Baseline ของเด็กคนนี้</button>
         
         <div style="width: 100%; height: 1px; background: #444; margin: 15px 0;"></div>
         <p style="color:#888; font-size:12px; margin-bottom:5px;">ระบบฐานข้อมูลออฟไลน์ (Local DB)</p>
         <div class="db-controls">
-            <button class="btn-outline" onclick="backupDB()">💾 Backup DB</button>
-            <button class="btn-outline" onclick="document.getElementById('fileUpload').click()">📂 Restore DB</button>
+            <button class="btn-lock-app" style="margin-top:0;" onclick="backupDB()">💾 Backup DB</button>
+            <button class="btn-lock-app" style="margin-top:0;" onclick="document.getElementById('fileUpload').click()">📂 Restore DB</button>
             <input type="file" id="fileUpload" style="display:none;" accept=".json" onchange="restoreDB(event)">
         </div>
+
+        <button class="btn-lock-app" id="forceLockBtn" type="button">🔒 ล็อกหน้าจออีกครั้ง</button>
     </div>
 
-    <div id="screen-precheck" class="center-box" style="display:none;">
-        <h2 style="color:#ffeb3b;">⚠️ ไม่พบประวัติการฝึก</h2>
+    <div id="precheckScreen">
+        <h2 style="color:#ffeb3b; margin-top:0;">⚠️ ไม่พบประวัติการฝึก</h2>
         <p style="color:#ccc; font-size: 14px; margin-bottom: 20px;">เพื่อให้การคำนวณแม่นยำที่สุด กรุณาประเมินสภาวะของเด็กด้วยสายตา (Clinical Observation) ก่อนเริ่มบันทึก Baseline ครั้งแรก</p>
         
-        <button class="btn-primary" style="background: #4da6ff;" onclick="triggerBlueIntervention('precheck')">🥶 โซนสีฟ้า (ซึม/เฉื่อยชา/ง่วง)</button>
-        <button class="btn-primary btn-success" onclick="enterDashboard(false)">😃 โซนสีเขียว (พร้อมเรียนรู้ / Optimal)</button>
-        <button class="btn-primary" style="background: #ffeb3b; color: #111;" onclick="enterDashboard(false)">😐 โซนสีเหลือง (เริ่มตื่นตัว)</button>
-        <button class="btn-primary btn-danger" onclick="enterDashboard(false)">😫 โซนสีแดง (เครียด/Hyper)</button>
+        <button class="btn-main" style="background: #4da6ff;" onclick="triggerBlueIntervention('precheck')">🥶 โซนสีฟ้า (ซึม/เฉื่อยชา/ง่วง)</button>
+        <button class="btn-main" style="background: #00e676; color: #111;" onclick="finishManualPrecheck()">😃 โซนสีเขียว (พร้อมเรียนรู้ / Optimal)</button>
+        <button class="btn-main" style="background: #ffeb3b; color: #111;" onclick="finishManualPrecheck()">😐 โซนสีเหลือง (เริ่มตื่นตัว)</button>
+        <button class="btn-main" style="background: #ff4d4d;" onclick="finishManualPrecheck()">😫 โซนสีแดง (เครียด/Hyper)</button>
     </div>
 
-    <div id="screen-dashboard" class="screen">
-        <div class="dash-header">
-            <div>
-                <h3 style="margin:0; color:#4da6ff;">ArousalSense</h3>
-                <div id="patientInfoLabel" style="font-size:12px; color:#aaa;">ผู้รับการฝึก: --</div>
+    <div class="dashboard" id="mainDashboard">
+        <div class="header">
+            <div class="header-title">
+                <h1>
+                    <img src="A logo-2.png" alt="Logo" class="app-logo" onerror="this.style.display='none'">
+                    ArousalSense
+                </h1>
+                <div class="child-info">
+                    <div id="childNameDisp">ผู้รับการฝึก: ---</div>
+                    <div id="childAgeDisp">อายุ: ---</div>
+                </div>
             </div>
-            <div style="display:flex; gap:10px;">
-                <button class="btn-outline" style="padding: 5px 10px; margin:0;" onclick="location.reload()">กลับ</button>
-                <button id="exportBtn" class="btn-primary btn-success" style="padding: 5px 10px; margin:0; display:none;" onclick="exportCSV()">บันทึก CSV</button>
+            
+            <div class="header-actions">
+                <div class="battery-box" id="batteryContainer" title="ระดับแบตเตอรี่ของเซ็นเซอร์">
+                    <span class="battery-icon">🔋</span>
+                    <span id="batteryPercent">--%</span>
+                </div>
+                <div class="action-buttons">
+                    <button class="icon-btn" id="resetPatientBtn" title="เปลี่ยนผู้รับการฝึก">
+                        <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                    </button>
+                    <button class="icon-btn" id="exportBtn" title="บันทึกข้อมูลวิจัย (CSV)" style="display: none;">
+                        <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                    </button>
+                </div>
             </div>
         </div>
 
-        <div class="dash-content">
-            <button id="connectBtn" class="btn-primary" onclick="connectSensor()">🔗 เชื่อมต่อ Sensor (BLE)</button>
-            <div id="statusText" style="text-align:center; padding:10px; background:#333; border-radius:8px; margin-bottom:10px; font-weight:bold;">รอการเชื่อมต่อ...</div>
-            
-            <div class="traffic-panel">
-                <div class="light-box">
-                    <div class="bulb green" id="lightGreen">😃</div>
-                    <div class="bulb yellow" id="lightYellow">😐</div>
-                    <div class="bulb red" id="lightRed">😫</div>
+        <button class="btn-main" id="connectBtn" type="button">🔗 ค้นหาและเชื่อมต่อ Sensor</button>
+
+        <div class="traffic-panel" id="trafficPanel">
+            <div class="light-box">
+                <div class="bulb green" id="lightGreen">😃</div>
+                <div class="bulb yellow" id="lightYellow">😐</div>
+                <div class="bulb red" id="lightRed">😫</div>
+            </div>
+        </div>
+
+        <div class="box-container">
+            <div class="box" id="hrBox" style="border-color: #ff4d4d;">
+                <h2>Heart Rate</h2>
+                <div class="value" id="hrDisplay" style="color: #ff4d4d;">--</div>
+                <div class="unit">BPM</div>
+            </div>
+            <div class="box" id="hrvBox" style="border-color: #00e676;">
+                <h2>HRV (RMSSD)</h2>
+                <div class="value" id="hrvDisplay" style="color: #00e676;">--</div>
+                <div class="unit">Resilience (ms)</div>
+            </div>
+        </div>
+
+        <div id="statusText">รอการเชื่อมต่อ...</div>
+
+        <div class="chart-container">
+            <canvas id="arousalChart"></canvas>
+        </div>
+
+        <div class="footer" id="baselineInfo">
+            System Initializing... | © 2026 NITITHORN NANGLAE
+        </div>
+
+        <div class="modal-overlay" id="connectModal">
+            <div class="connect-modal">
+                <div class="connect-icon-wrapper">
+                    <div class="connect-radar"></div>
+                    <div class="connect-center-icon">
+                        <svg class="strap-svg" viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5 25 L95 25" stroke="#333" stroke-width="12" stroke-linecap="round" fill="none" />
+                            <rect x="30" y="10" width="40" height="30" rx="6" fill="#1e1e24" stroke="#4da6ff" stroke-width="3" />
+                            <path d="M 38 25 L 43 25 L 47 15 L 53 35 L 57 25 L 62 25" stroke="#00e676" stroke-width="3" fill="none" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                </div>
+                <h3 class="connect-title" id="connectModalTitle">กำลังค้นหาอุปกรณ์</h3>
+                <p class="connect-sub" id="connectModalSub">กรุณาเปิดเซ็นเซอร์ให้อยู่ใกล้ๆ</p>
+            </div>
+        </div>
+
+        <div class="modal-overlay" id="calibModal">
+            <div class="calib-modal">
+                <svg class="bear-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="25" fill="#8D6E63" /> <circle cx="50" cy="50" r="12" fill="#D7CCC8" /> <circle cx="150" cy="50" r="25" fill="#8D6E63" /> <circle cx="150" cy="50" r="12" fill="#D7CCC8" /> <ellipse cx="100" cy="130" rx="65" ry="70" fill="#8D6E63" /> <ellipse cx="100" cy="140" rx="45" ry="50" fill="#D7CCC8" /> <circle cx="100" cy="80" r="55" fill="#8D6E63" /> <ellipse cx="100" cy="95" rx="22" ry="16" fill="#D7CCC8" /> <circle cx="100" cy="88" r="6" fill="#3E2723" /> <path d="M 100 94 Q 100 105 92 105" stroke="#3E2723" stroke-width="3" fill="none" stroke-linecap="round"/> <path d="M 100 94 Q 100 105 108 105" stroke="#3E2723" stroke-width="3" fill="none" stroke-linecap="round"/> <path d="M 65 75 Q 75 85 85 75" stroke="#3E2723" stroke-width="4" fill="none" stroke-linecap="round"/> <path d="M 115 75 Q 125 85 135 75" stroke="#3E2723" stroke-width="4" fill="none" stroke-linecap="round"/> <ellipse cx="65" cy="90" rx="8" ry="4" fill="#FF8A80" opacity="0.8" /> <ellipse cx="135" cy="90" rx="8" ry="4" fill="#FF8A80" opacity="0.8" /> <ellipse cx="40" cy="115" rx="15" ry="25" fill="#8D6E63" transform="rotate(-20 40 115)" /> <ellipse cx="160" cy="115" rx="15" ry="25" fill="#8D6E63" transform="rotate(20 160 115)" /> <circle cx="55" cy="180" r="18" fill="#795548" /> <circle cx="145" cy="180" r="18" fill="#795548" />
+                </svg>
+                <h3 class="calib-title">เรียนรู้จังหวะหัวใจ</h3>
+                <p class="calib-text">คนเก่งนั่งพักนิ่งๆ นะคะ<br>ทำพุงป่องเหมือนน้องหมีเลย</p>
+                <div class="timer-circle" id="calibTimerCircle" style="--progress: 100%;">
+                    <div class="timer-inner" id="calibTimerDisplay">60</div>
                 </div>
             </div>
-
-            <div class="box-container">
-                <div class="box" style="border-color:#ff4d4d;">
-                    <h4 style="margin:0; color:#aaa; font-size:12px;">Heart Rate</h4>
-                    <div class="value" id="hrDisplay" style="color:#ff4d4d;">--</div>
-                </div>
-                <div class="box" style="border-color:#00e676;">
-                    <h4 style="margin:0; color:#aaa; font-size:12px;">HRV (RMSSD)</h4>
-                    <div class="value" id="hrvDisplay" style="color:#00e676;">--</div>
-                </div>
-            </div>
-
-            <div class="chart-container"><canvas id="arousalChart"></canvas></div>
-            <div id="baselineInfo" style="font-size:11px; color:#666; text-align:center; margin-top:10px;">System Ready</div>
         </div>
 
         <div id="blueZoneModal" class="blue-overlay">
             <div class="blue-icon">⚡</div>
             <h1>Blue Zone Alert</h1>
-            <p>ระดับการตื่นตัวต่ำกว่าเกณฑ์<br>กรุณาใช้กลยุทธ์เฉพาะบุคคล (Alerting Strategies) <br>เช่น Heavy work หรือ Vestibular <br>เพื่อปรับ Arousal ให้อยู่ในระดับ Optimal</p>
+            <p>ระดับการตื่นตัวต่ำกว่าเกณฑ์<br>กรุณาใช้กลยุทธ์เฉพาะบุคคล (Alerting Strategies)<br>เพื่อปรับ Arousal ให้อยู่ในระดับ Optimal</p>
             <div id="blueZoneSensorStatus" style="color:#00e676; font-size: 14px; margin-bottom: 20px;">กำลังอ่านค่าเซ็นเซอร์เพื่อรอกลับเข้าสู่โซนสีเขียว...</div>
-            <button id="blueZoneManualResume" class="btn-primary btn-success" style="max-width:200px; display:none;" onclick="closeBlueIntervention()">เด็กพร้อมแล้ว (Manual)</button>
+            <button id="blueZoneManualResume" class="btn-main" style="background:#00e676; color:#111; max-width:200px; display:none;" onclick="closeBlueIntervention()">เด็กพร้อมแล้ว (Manual)</button>
         </div>
 
-        <div id="calibModal" class="modal-overlay">
-            <div class="center-box" style="background:#fdfbf7; border-color:#fff;">
-                <h3 style="color:#5D4037;">กำลังเรียนรู้จังหวะหัวใจ...</h3>
-                <p style="color:#8D6E63; font-weight:bold;">ให้น้องนั่งพักนิ่งๆ ทำพุงป่อง 1 นาที</p>
-                <div style="font-size:40px; font-weight:bold; color:#00e676;" id="calibTimer">60</div>
-            </div>
-        </div>
     </div>
 
     <script>
-        // --- 1. Database & App State Management ---
-        const APP_PIN = "2026";
-        let db = JSON.parse(localStorage.getItem('arousal_db_v2')) || {};
-        let patientProfile = { id: "", isMedicated: false, ageStr: "" };
-        let sessionLog = [];
-        let historicalBaseline = null; 
-        
-        function saveDB() { localStorage.setItem('arousal_db_v2', JSON.stringify(db)); }
-        
-        function unlockApp() {
-            if (document.getElementById('pinCode').value === APP_PIN) {
-                document.getElementById('screen-lock').style.display = 'none';
-                document.getElementById('screen-setup').style.display = 'flex';
-            } else { alert("รหัสผ่านไม่ถูกต้อง"); document.getElementById('pinCode').value = ''; }
+        console.log("%c ArousalSense PWA System \n Copyright © 2026 NITITHORN NANGLAE ", "background: #222; color: #4da6ff; font-size: 16px; font-weight: bold; border-radius: 4px;");
+
+        // ========================================================
+        // 🚀 PWA Service Worker Registration
+        // ========================================================
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                .then(registration => { console.log('ServiceWorker PWA Active', registration.scope); })
+                .catch(err => { console.log('ServiceWorker Error: ', err); });
+            });
         }
 
-        // DB Backup & Restore
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && (e.key === 'u' || e.key === 's' || e.key === 'i' || e.key === 'j')) { e.preventDefault(); }
+            if (e.key === 'F12') { e.preventDefault(); }
+        });
+
+        window.addEventListener('beforeunload', function (e) {
+            if (researchDataLog.length > 0) {
+                let msg = 'คำเตือน! ข้อมูลการฝึกยังไม่ได้ถูกบันทึก';
+                e.returnValue = msg;
+                return msg;
+            }
+        });
+
+        window.addEventListener('popstate', function (event) {
+            if (document.getElementById('mainDashboard').style.display === 'flex' && researchDataLog.length > 0) {
+                let confirmLeave = confirm("⚠️ คำเตือน: คุณมีข้อมูลวิจัยที่ยังไม่ได้บันทึก (Export CSV)\nหากย้อนกลับ ข้อมูลทั้งหมดจะสูญหาย!\n\nคุณแน่ใจหรือไม่ว่าต้องการย้อนกลับไปหน้าแรก?");
+                if (!confirmLeave) {
+                    history.pushState({ dashboard: true }, "", window.location.href);
+                } else {
+                    location.reload(); 
+                }
+            } else if (document.getElementById('mainDashboard').style.display === 'flex') {
+                 location.reload();
+            }
+        });
+
+        // --- ฐานข้อมูล Local DB ---
+        let db = JSON.parse(localStorage.getItem('arousal_db_v3')) || {};
+        let isMedicatedToday = false;
+        let historicalBaseline = null;
+
+        function saveDB() { localStorage.setItem('arousal_db_v3', JSON.stringify(db)); }
+        
         function backupDB() {
             const blob = new Blob([JSON.stringify(db, null, 2)], {type: "application/json"});
             const a = document.createElement("a");
@@ -208,7 +331,7 @@
             reader.readAsText(file);
         }
 
-        function resetPatientBaseline() {
+        document.getElementById('resetDbBtn').onclick = function() {
             let name = document.getElementById('inputName').value.trim();
             let isMed = document.getElementById('inputMed').checked;
             if(!name) return alert("กรุณาพิมพ์ชื่อผู้รับการฝึกก่อน");
@@ -216,109 +339,340 @@
             if(confirm(`ยืนยันการลบประวัติ Baseline ของ ${name} (สถานะยา: ${isMed}) ใช่หรือไม่?`)) {
                 delete db[dbKey]; saveDB(); alert("ลบประวัติเรียบร้อย");
             }
+        };
+
+        let arousalChart = null;
+
+        function initChartSafely() {
+            try {
+                const ctx = document.getElementById('arousalChart').getContext('2d');
+                arousalChart = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels: Array.from({length: TOTAL_POINTS}, (_, i) => i), datasets: [{ label: 'HRV', data: [], borderColor: '#4da6ff', backgroundColor: '#4da6ff', borderWidth: 3, tension: 0.3, pointRadius: 0, pointHitRadius: 10 }] },
+                    options: { responsive: true, maintainAspectRatio: false, animation: { duration: 0 }, scales: { x: { display: false, min: 0, max: TOTAL_POINTS - 1 }, y: { beginAtZero: true, grid: { color: '#444' }, ticks: { color: '#aaa' } } }, plugins: { legend: { display: false }, annotation: { annotations: {} } } }
+                });
+            } catch (error) {
+                console.error("❌ Chart initialization error:", error);
+                document.getElementById('statusText').innerText = "⚠️ ไม่พบไฟล์กราฟ! (โปรดเช็กไฟล์ในโฟลเดอร์)";
+                document.getElementById('statusText').style.color = "#ff4d4d";
+                document.getElementById('statusText').style.borderColor = "#ff4d4d";
+            }
         }
 
-        // --- 2. Flow Control ---
-        function startPreCheck() {
-            let name = document.getElementById('inputName').value.trim();
-            let yrs = document.getElementById('inputYears').value;
-            if(!name || !yrs) return alert("กรุณากรอกข้อมูลให้ครบ");
-            
-            patientProfile.id = name;
-            patientProfile.isMedicated = document.getElementById('inputMed').checked;
-            patientProfile.ageStr = `${yrs}Y${document.getElementById('inputMonths').value || 0}M`;
-            
-            let dbKey = `${patientProfile.id}_med_${patientProfile.isMedicated}`;
-            historicalBaseline = db[dbKey]; // Load history
+        const APP_PASSWORD = "2026"; 
 
-            document.getElementById('screen-setup').style.display = 'none';
-            document.getElementById('patientInfoLabel').innerText = `${name} | อายุ: ${patientProfile.ageStr} | ยา: ${patientProfile.isMedicated?"มี":"ไม่มี"}`;
+        let childName = "", childYears = 0, childMonths = 0;
+        let limitYellowMultiplier = 0.7, limitRedMultiplier = 0.4;
+        let audioCtx = null;
+        let bleDevice = null; 
+        let isReconnecting = false; 
+
+        const WINDOW_SIZE = 30;
+        const CALIBRATION_DURATION = 60; 
+        const VISIBLE_POINTS = 60; 
+        const FUTURE_SPACE = 20;   
+        const TOTAL_POINTS = VISIBLE_POINTS + FUTURE_SPACE; 
+        
+        let hrvHistory = []; 
+        let rrWindow = [];
+        let isCalibrated = false;
+        let calibrationStartTime = null;
+        let calibrationData = [];
+        let calibrationDataHR = []; // เก็บ HR ของวันนี้ด้วย
+        let baselineRmssd = 0;
+        let dailyBaselineHR = 0; // Baseline HR ของวันนี้
+        let limitYellow = 0, limitRed = 0;
+        let currentHrv = 0;
+        let lastState = "";
+        
+        // ตัวแปรสำหรับ Blue Zone
+        let isPreCheckMode = false;
+        let preCheckTimer = 0;
+        let preCheckDataHR = [];
+        let lastValidHR = null;
+        let blueDebounceCounter = 0;
+
+        let researchDataLog = [];
+
+        window.onload = function() {
+            initChartSafely(); 
+            if (sessionStorage.getItem("appUnlocked") === "true") {
+                document.getElementById('lockScreen').style.display = 'none';
+                document.getElementById('setupScreen').style.display = 'block';
+            }
+        };
+
+        document.getElementById('unlockBtn').onclick = function() {
+            let enteredPin = document.getElementById('pinCode').value;
+            if(enteredPin === APP_PASSWORD) {
+                sessionStorage.setItem("appUnlocked", "true"); 
+                document.getElementById('lockScreen').style.display = 'none';
+                document.getElementById('setupScreen').style.display = 'block';
+            } else {
+                document.getElementById('pinError').style.display = 'block';
+                document.getElementById('pinCode').value = ''; 
+            }
+        };
+
+        document.getElementById('pinCode').addEventListener("keyup", function(event) {
+            if (event.key === "Enter") { event.preventDefault(); document.getElementById('unlockBtn').click(); }
+        });
+
+        document.getElementById('forceLockBtn').onclick = function() {
+            sessionStorage.removeItem("appUnlocked"); 
+            location.reload(); 
+        };
+
+        document.getElementById('resetPatientBtn').onclick = function() {
+            if (researchDataLog.length > 0) {
+                let confirmReset = confirm("⚠️ คุณยังไม่ได้กดบันทึกข้อมูล\nต้องการลบข้อมูลและเปลี่ยนคนใช่หรือไม่?");
+                if (!confirmReset) return; 
+            }
+            if (bleDevice && bleDevice.gatt.connected) bleDevice.gatt.disconnect();
+            location.reload(); 
+        };
+
+        function setTrafficLight(color) {
+            document.getElementById('lightRed').classList.remove('active');
+            document.getElementById('lightYellow').classList.remove('active');
+            document.getElementById('lightGreen').classList.remove('active');
+            
+            if(color === 'red') document.getElementById('lightRed').classList.add('active');
+            else if(color === 'yellow') document.getElementById('lightYellow').classList.add('active');
+            else if(color === 'green') document.getElementById('lightGreen').classList.add('active');
+            else if(color === 'all') { 
+                document.getElementById('lightRed').classList.add('active');
+                document.getElementById('lightYellow').classList.add('active');
+                document.getElementById('lightGreen').classList.add('active');
+            }
+        }
+
+        // --- เริ่มเข้าใช้งาน ---
+        document.getElementById('startAppBtn').onclick = function() {
+            const errorMsg = document.getElementById('errorMsg');
+            errorMsg.style.display = 'none';
+
+            let years = parseInt(document.getElementById('inputYears').value);
+            let months = parseInt(document.getElementById('inputMonths').value || "0");
+            childName = document.getElementById('inputName').value || "น้อง";
+            isMedicatedToday = document.getElementById('inputMed').checked;
+
+            if (isNaN(years) || years < 1) {
+                errorMsg.innerText = "⚠️ กรุณาพิมพ์ตัวเลขในช่อง 'ปี' ให้ถูกต้องครับ";
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            childYears = years; childMonths = months;
+            if ((years * 12) + months >= 72) { limitYellowMultiplier = 0.75; limitRedMultiplier = 0.50; } 
+            else { limitYellowMultiplier = 0.70; limitRedMultiplier = 0.40; }
+
+            document.getElementById('childNameDisp').innerText = `ผู้รับการฝึก: ${childName}`;
+            document.getElementById('childAgeDisp').innerText = `อายุ: ${childYears} ปี ${childMonths} เดือน ${isMedicatedToday?"(มียา)":""}`;
+            
+            // ตรวจสอบประวัติเดิม
+            let dbKey = `${childName}_med_${isMedicatedToday}`;
+            historicalBaseline = db[dbKey];
+            
+            document.getElementById('setupScreen').style.display = 'none';
 
             if (!historicalBaseline) {
-                // First time: Manual Pre-check
-                document.getElementById('screen-precheck').style.display = 'flex';
+                // ไม่มีประวัติ -> เปิดหน้าให้ผู้ใช้กดประเมินด้วยตา
+                document.getElementById('precheckScreen').style.display = 'block';
             } else {
-                // Has history: Auto Pre-check in dashboard
-                enterDashboard(true);
+                // มีประวัติ -> เข้า Dashboard โหมด Precheck อัตโนมัติ 30 วิ
+                document.getElementById('mainDashboard').style.display = 'flex'; 
+                isPreCheckMode = true;
             }
-        }
 
-        let isPreCheckMode = false;
-        function enterDashboard(requireAutoPreCheck) {
-            document.getElementById('screen-precheck').style.display = 'none';
-            document.getElementById('screen-dashboard').style.display = 'flex';
-            isPreCheckMode = requireAutoPreCheck;
-            if(isPreCheckMode) {
-                document.getElementById('statusText').innerText = "รอเชื่อมต่อเซ็นเซอร์เพื่อทำการ Pre-Check 30 วินาที...";
-            }
-        }
+            history.pushState({ dashboard: true }, "", window.location.href);
+            try { const AudioContext = window.AudioContext || window.webkitAudioContext; if(AudioContext) audioCtx = new AudioContext(); } catch(e) {}
+        };
 
-        // 🛠️ ส่วนที่แก้ไขบั๊กให้หน้าจอสีฟ้าแสดงผลได้ถูกต้องแล้วครับ
+        // ฟังก์ชันระบบ Blue Zone ใหม่ (ทำงานทับบนโครงสร้างเดิม)
         function triggerBlueIntervention(source) {
             if (source === 'precheck') {
-                // กรณีครั้งแรก: เปิดหน้า Dashboard เป็นฉากหลังก่อน แล้วค่อยเอาหน้าต่างสีฟ้าซ้อนทับ
-                enterDashboard(false); 
+                document.getElementById('precheckScreen').style.display = 'none';
+                document.getElementById('mainDashboard').style.display = 'flex';
                 document.getElementById('blueZoneSensorStatus').style.display = 'none';
                 document.getElementById('blueZoneManualResume').style.display = 'block';
             } else {
-                // กรณีครั้งถัดๆ ไป (วัดด้วยเซ็นเซอร์): หน้า Dashboard ถูกเปิดไว้อยู่แล้ว
                 document.getElementById('blueZoneSensorStatus').style.display = 'block';
                 document.getElementById('blueZoneManualResume').style.display = 'none';
             }
-            // เรียกหน้าต่างสีฟ้าขึ้นมาแสดงผล
             document.getElementById('blueZoneModal').style.display = 'flex';
         }
 
+        function finishManualPrecheck() {
+            document.getElementById('precheckScreen').style.display = 'none';
+            document.getElementById('mainDashboard').style.display = 'flex';
+        }
+
         function closeBlueIntervention() {
-            // ปิดหน้าต่างสีฟ้า (ระบบจะกลับไปอยู่ที่หน้า Dashboard เพื่อให้กดเชื่อมเซ็นเซอร์ต่อ)
             document.getElementById('blueZoneModal').style.display = 'none';
         }
 
-        // --- 3. Sensor & Algorithm Logic ---
-        let bleDevice, bleServer, hrChar;
-        let rrWindow = [], hrvHistory = Array(60).fill(null);
-        let currentHR = 0, currentHRV = 0;
-        let chart;
-        
-        // Anti-Artifact & Debounce
-        let lastValidHR = null;
-        let blueDebounceCounter = 0; // Needs 5 consecutive seconds to trigger Blue
-        
-        // State Limits
-        let dailyLimitYellow = 0, dailyLimitRed = 0, dailyBaselineRMSSD = 0, dailyBaselineHR = 0;
-        let isCalibrated = false;
-        let calibDataHR = [], calibDataHRV = [];
-        let preCheckDataHR = [], preCheckTimer = 0;
-
-        async function connectSensor() {
-            try {
-                bleDevice = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
-                bleServer = await bleDevice.gatt.connect();
-                const service = await bleServer.getPrimaryService('heart_rate');
-                hrChar = await service.getCharacteristic('heart_rate_measurement');
-                
-                document.getElementById('connectBtn').style.display = 'none';
-                await hrChar.startNotifications();
-                hrChar.addEventListener('characteristicvaluechanged', handleSensorData);
-                initChart();
-            } catch (err) { alert("เชื่อมต่อล้มเหลว: " + err); }
+        // --- ระบบเสียงและกราฟเดิม ---
+        function playWarningBeep() {
+            if (!audioCtx) return;
+            let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'sine'; osc.frequency.value = 880; 
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime); 
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+            osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.1);
         }
 
-        function handleSensorData(event) {
+        function playSuccessDing() {
+            if (!audioCtx) return;
+            let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1046.50, audioCtx.currentTime); 
+            osc.frequency.setValueAtTime(1318.51, audioCtx.currentTime + 0.1); 
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+            osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.5);
+        }
+
+        function playDisconnectAlarm() {
+            if (!audioCtx) return;
+            let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'sawtooth'; osc.frequency.value = 200; 
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.0);
+            osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 1.0);
+        }
+
+        function checkAlarm() {
+            if (!isCalibrated) { setTimeout(checkAlarm, 1000); return; }
+            if (currentHrv < limitYellow) {
+                playWarningBeep();
+                let ratio = (limitYellow - currentHrv) / (limitYellow - limitRed); 
+                if (ratio < 0) ratio = 0; if (ratio > 1) ratio = 1; 
+                setTimeout(checkAlarm, 1000 - (ratio * 800)); 
+            } else { setTimeout(checkAlarm, 1000); }
+        }
+
+        function calculateRMSSD(rrs) {
+            if (rrs.length < 2) return 0;
+            let sumSq = 0;
+            for (let i = 1; i < rrs.length; i++) sumSq += Math.pow(rrs[i] - rrs[i-1], 2);
+            return Math.sqrt(sumSq / (rrs.length - 1));
+        }
+
+        document.getElementById('connectBtn').onclick = async function() {
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            
+            try {
+                if (!bleDevice) {
+                    bleDevice = await navigator.bluetooth.requestDevice({ 
+                        filters: [{ services: ['heart_rate'] }],
+                        optionalServices: ['battery_service'] 
+                    });
+                    bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+                }
+                await connectGATTServer();
+            } catch (error) { 
+                console.error("Connection Failed:", error);
+                document.getElementById('statusText').innerText = "❌ เชื่อมต่อล้มเหลว/ยกเลิก โปรดลองอีกครั้ง"; 
+                document.getElementById('statusText').style.color = "#ff4d4d";
+                document.getElementById('connectModal').style.display = 'none';
+            }
+        };
+
+        async function connectGATTServer() {
+            const connectModal = document.getElementById('connectModal');
+            const connectTitle = document.getElementById('connectModalTitle');
+            const connectSub = document.getElementById('connectModalSub');
+            
+            if (!isReconnecting) {
+                connectModal.style.display = 'flex';
+                connectTitle.innerText = "กำลังเชื่อมต่ออุปกรณ์...";
+                connectSub.innerText = `กำลังสื่อสารกับ ${bleDevice.name}...`;
+            }
+
+            const server = await bleDevice.gatt.connect();
+            
+            try {
+                const batteryService = await server.getPrimaryService('battery_service');
+                const batteryCharacteristic = await batteryService.getCharacteristic('battery_level');
+                const batteryValue = await batteryCharacteristic.readValue();
+                const batteryPercent = batteryValue.getUint8(0);
+                
+                document.getElementById('batteryContainer').style.display = 'flex';
+                let batteryText = document.getElementById('batteryPercent');
+                batteryText.innerText = `${batteryPercent}%`;
+                if(batteryPercent <= 20) { batteryText.style.color = "#ff4d4d"; } 
+                else if (batteryPercent <= 50) { batteryText.style.color = "#ffeb3b"; }
+            } catch (batteryError) {
+                console.warn("Sensor battery unknown", batteryError);
+            }
+
+            const service = await server.getPrimaryService('heart_rate');
+            const characteristic = await service.getCharacteristic('heart_rate_measurement');
+
+            document.getElementById('connectBtn').style.display = 'none'; 
+            connectTitle.style.color = "#00e676";
+            connectTitle.innerText = "เชื่อมต่อสำเร็จ!";
+            connectSub.innerText = "รอรับสัญญาณชีพจร...";
+            
+            await characteristic.startNotifications();
+            characteristic.addEventListener('characteristicvaluechanged', handleData);
+            
+            if (isPreCheckMode) {
+                document.getElementById('statusText').innerText = "รอเชื่อมต่อเซ็นเซอร์เพื่อทำการ Pre-Check 30 วินาที...";
+            }
+            
+            isReconnecting = false;
+            document.getElementById('connectBtn').disabled = false;
+        }
+
+        async function onDisconnected() {
+            console.log("Device disconnected!");
+            playDisconnectAlarm();
+            
+            if (isReconnecting) return;
+            isReconnecting = true;
+
+            document.getElementById('statusText').innerText = "⚠️ สัญญาณหลุด! กำลังต่ออุปกรณ์ใหม่อัตโนมัติ...";
+            document.getElementById('statusText').style.color = "#ffeb3b";
+            document.getElementById('statusText').style.borderColor = "#ff9800";
+            
+            const btn = document.getElementById('connectBtn');
+            btn.style.display = 'block'; 
+            btn.innerText = "กำลังค้นหาสัญญาณเพื่อเชื่อมต่อใหม่...";
+            btn.style.backgroundColor = "#ff9800"; 
+            btn.disabled = true;
+
+            while (isReconnecting && bleDevice && !bleDevice.gatt.connected) {
+                try {
+                    await connectGATTServer();
+                    break; 
+                } catch (error) {
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+            }
+        }
+
+        // --- Logic หลักผสมผสาน ---
+        function handleData(event) {
+            document.getElementById('connectModal').style.display = 'none';
+
             const val = event.target.value;
             const flags = val.getUint8(0);
             let index = 1;
-            let rawHR = (flags & 0x01) ? val.getUint16(index, true) : val.getUint8(index);
+            
+            let hr = (flags & 0x01) ? val.getUint16(index, true) : val.getUint8(index);
             index += (flags & 0x01) ? 2 : 1;
 
-            // 🛡️ Noise Filter (Artifact Rejection)
-            if (lastValidHR !== null && Math.abs(rawHR - lastValidHR) > 30) {
-                // Reject sudden impossible jumps
-                return; 
-            }
-            lastValidHR = rawHR;
-            currentHR = rawHR;
-            document.getElementById('hrDisplay').innerText = currentHR;
+            // กรองสัญญาณรบกวน (Artifact rejection)
+            if (lastValidHR !== null && Math.abs(hr - lastValidHR) > 30) return;
+            lastValidHR = hr;
+
+            document.getElementById('hrDisplay').innerText = hr;
 
             if ((flags & 0x10) >> 4) {
                 while (index < val.byteLength) {
@@ -326,176 +680,223 @@
                     index += 2;
                 }
             }
-            if (rrWindow.length > 30) rrWindow = rrWindow.slice(rrWindow.length - 30);
-            if (rrWindow.length >= 20) {
-                currentHRV = calculateRMSSD(rrWindow);
-                document.getElementById('hrvDisplay').innerText = currentHRV.toFixed(1);
-                processLogicLoop();
-            }
-        }
 
-        function calculateRMSSD(rrs) {
-            let sumSq = 0;
-            for (let i = 1; i < rrs.length; i++) sumSq += Math.pow(rrs[i] - rrs[i-1], 2);
-            return Math.sqrt(sumSq / (rrs.length - 1));
-        }
+            if (rrWindow.length > WINDOW_SIZE) rrWindow = rrWindow.slice(rrWindow.length - WINDOW_SIZE);
 
-        function processLogicLoop() {
-            // A. Auto Pre-Check Phase (30s)
-            if (isPreCheckMode && !isCalibrated) {
-                preCheckDataHR.push(currentHR);
-                preCheckTimer++;
-                document.getElementById('statusText').innerText = `กำลังตรวจสอบเทียบประวัติเดิม... (${preCheckTimer}/30)`;
-                
-                if (preCheckTimer >= 30) {
-                    let avgPreHR = preCheckDataHR.reduce((a,b)=>a+b,0)/preCheckDataHR.length;
-                    isPreCheckMode = false; // Finish pre-check
+            if (rrWindow.length >= WINDOW_SIZE) {
+                currentHrv = calculateRMSSD(rrWindow);
+                document.getElementById('hrvDisplay').innerText = currentHrv.toFixed(1);
+
+                let currentTime = Date.now() / 1000;
+                const statusText = document.getElementById('statusText');
+
+                // 1. ถ้าระบบกำลังล็อกด้วย Blue Zone (Intervention)
+                if (document.getElementById('blueZoneModal').style.display === 'flex' && historicalBaseline) {
+                    if (hr >= (historicalBaseline.hr * 0.90)) {
+                        blueDebounceCounter++;
+                        if (blueDebounceCounter >= 5) {
+                            closeBlueIntervention();
+                            blueDebounceCounter = 0;
+                            // ถ้ายังไม่เคยวัดน้องหมี ก็ให้เริ่มวัดเลย
+                            if (!isCalibrated && !calibrationStartTime) calibrationStartTime = currentTime;
+                        }
+                    } else { blueDebounceCounter = 0; }
+                    return; // หยุดทำงานจนกว่าจะพ้น Blue Zone
+                }
+
+                // 2. ถ้าอยู่ในโหมด Pre-Check 30 วิ (กรณีมีประวัติ)
+                if (isPreCheckMode && !isCalibrated) {
+                    preCheckDataHR.push(hr);
+                    preCheckTimer++;
+                    statusText.innerText = `ตรวจสอบเทียบประวัติเดิม... (${preCheckTimer}/30)`;
+                    if (preCheckTimer >= 30) {
+                        let avgPreHR = preCheckDataHR.reduce((a,b)=>a+b,0)/preCheckDataHR.length;
+                        isPreCheckMode = false;
+                        if (historicalBaseline && avgPreHR < (historicalBaseline.hr * 0.85)) {
+                            triggerBlueIntervention('auto');
+                        } else {
+                            if (!calibrationStartTime) calibrationStartTime = currentTime;
+                        }
+                    }
+                    return; 
+                }
+
+                // 3. เริ่ม Calibrate น้องหมี (ถ้ายังไม่ Calibrate)
+                if (!isCalibrated) {
+                    if (!calibrationStartTime) calibrationStartTime = currentTime;
+                    let elapsed = currentTime - calibrationStartTime;
+                    let remainingSec = Math.max(0, Math.ceil(CALIBRATION_DURATION - elapsed));
                     
-                    // Logic: Is it Blue Zone compared to history?
-                    if (avgPreHR < (historicalBaseline.hr * 0.85)) {
-                        triggerBlueIntervention('auto');
-                        document.getElementById('statusText').innerText = "รอการฟื้นฟู Arousal...";
+                    calibrationData.push(currentHrv);
+                    calibrationDataHR.push(hr); // เก็บ HR ของวันนี้ด้วย
+                    statusText.innerText = `CALIBRATING... ${remainingSec}s`;
+                    setTrafficLight('all'); 
+                    
+                    let progressPercent = (remainingSec / CALIBRATION_DURATION) * 100;
+                    document.getElementById('calibModal').style.display = 'flex';
+                    document.getElementById('calibTimerDisplay').innerText = remainingSec;
+                    document.getElementById('calibTimerCircle').style.setProperty('--progress', progressPercent + '%');
+
+                    if (elapsed >= CALIBRATION_DURATION) {
+                        baselineRmssd = calibrationData.reduce((a, b) => a + b, 0) / calibrationData.length;
+                        dailyBaselineHR = calibrationDataHR.reduce((a, b) => a + b, 0) / calibrationDataHR.length;
+
+                        limitYellow = baselineRmssd * limitYellowMultiplier; 
+                        limitRed = baselineRmssd * limitRedMultiplier;    
+                        
+                        isCalibrated = true;
+                        document.getElementById('calibModal').style.display = 'none'; 
+                        document.getElementById('exportBtn').style.display = 'flex';
+
+                        document.getElementById('baselineInfo').innerText = `Baseline HRV: ${baselineRmssd.toFixed(1)} ms | HR: ${dailyBaselineHR.toFixed(1)} | © 2026 NITITHORN NANGLAE`;
+
+                        hrvHistory = Array(VISIBLE_POINTS).fill(baselineRmssd);
+                        setupGraphZones();
+                        checkAlarm();
+                    }
+                } 
+                // 4. เข้าสู่กราฟปกติ
+                else {
+                    hrvHistory.push(currentHrv);
+                    if (hrvHistory.length > VISIBLE_POINTS) hrvHistory.shift(); 
+                    let nullArray = Array(FUTURE_SPACE).fill(null);
+                    
+                    if (arousalChart) {
+                        arousalChart.data.datasets[0].data = hrvHistory.concat(nullArray);
+                    }
+
+                    // ดักจับ Blue zone ระหว่างฝึก
+                    if (hr < (dailyBaselineHR * 0.85) && currentHrv >= limitYellow) {
+                        blueDebounceCounter++;
+                        if (blueDebounceCounter >= 5) {
+                            triggerBlueIntervention('auto');
+                            historicalBaseline = { hr: dailyBaselineHR };
+                            blueDebounceCounter = 0;
+                            return; // ตัดรอบ
+                        }
                     } else {
-                        startDailyCalibration(); // Passed! Start normal calib
-                    }
-                }
-                return;
-            }
-
-            // B. Wait for Recovery (if blocked by Blue overlay)
-            if (document.getElementById('blueZoneModal').style.display === 'flex' && historicalBaseline) {
-                // Auto-resume if HR climbs back near historical baseline
-                if (currentHR >= (historicalBaseline.hr * 0.90)) {
-                    blueDebounceCounter++;
-                    if(blueDebounceCounter >= 5) {
-                        closeBlueIntervention();
-                        blueDebounceCounter = 0;
-                        if(!isCalibrated) startDailyCalibration();
-                    }
-                } else { blueDebounceCounter = 0; }
-                return;
-            }
-
-            // C. Daily Calibration Phase (60s)
-            if (!isCalibrated && !isPreCheckMode && document.getElementById('blueZoneModal').style.display !== 'flex') {
-                calibDataHR.push(currentHR); calibDataHRV.push(currentHRV);
-                let remaining = 60 - calibDataHR.length;
-                document.getElementById('calibModal').style.display = 'flex';
-                document.getElementById('calibTimer').innerText = remaining;
-                
-                if (remaining <= 0) {
-                    dailyBaselineHR = calibDataHR.reduce((a,b)=>a+b,0)/60;
-                    dailyBaselineRMSSD = calibDataHRV.reduce((a,b)=>a+b,0)/60;
-                    
-                    // Set limits for today
-                    dailyLimitYellow = dailyBaselineRMSSD * 0.70;
-                    dailyLimitRed = dailyBaselineRMSSD * 0.40;
-                    
-                    isCalibrated = true;
-                    document.getElementById('calibModal').style.display = 'none';
-                    document.getElementById('exportBtn').style.display = 'block';
-                    document.getElementById('baselineInfo').innerText = `Daily Baseline HRV: ${dailyBaselineRMSSD.toFixed(1)} | HR: ${dailyBaselineHR.toFixed(1)}`;
-                    
-                    hrvHistory = Array(60).fill(dailyBaselineRMSSD);
-                    drawChartZones();
-                }
-                return;
-            }
-
-            // D. Real-time Monitoring Phase
-            if (isCalibrated) {
-                hrvHistory.push(currentHRV);
-                if (hrvHistory.length > 80) hrvHistory.shift();
-                chart.data.datasets[0].data = hrvHistory;
-                chart.update();
-
-                // Check for sudden drop to Blue Zone during session
-                if (currentHR < (dailyBaselineHR * 0.85) && currentHRV >= dailyLimitYellow) {
-                    blueDebounceCounter++;
-                    if (blueDebounceCounter >= 5) { // 🛡️ Debounce 5 seconds
-                        triggerBlueIntervention('auto');
-                        historicalBaseline = { hr: dailyBaselineHR }; // use today's baseline as target for recovery
                         blueDebounceCounter = 0;
                     }
-                } else {
-                    blueDebounceCounter = 0; // Reset
-                    
-                    // Normal Traffic Lights (Green/Yellow/Red) based on HRV dropping
-                    let colorName = "Green";
-                    document.querySelectorAll('.bulb').forEach(b=>b.classList.remove('active'));
-                    
-                    if (currentHRV < dailyLimitRed) { 
-                        document.getElementById('lightRed').classList.add('active'); 
-                        document.getElementById('statusText').innerText = "DYSREGULATED (แดง)"; colorName="Red";
-                    } else if (currentHRV < dailyLimitYellow) { 
-                        document.getElementById('lightYellow').classList.add('active'); 
-                        document.getElementById('statusText').innerText = "ELEVATED (เหลือง)"; colorName="Yellow";
-                    } else { 
-                        document.getElementById('lightGreen').classList.add('active'); 
-                        document.getElementById('statusText').innerText = "OPTIMAL (เขียว)"; colorName="Green";
+
+                    let stateColor = "";
+                    let newState = ""; 
+                    let zoneColorName = "";
+
+                    if (currentHrv > limitYellow) {
+                        statusText.innerText = "OPTIMAL (คุมตัวเองได้ดีเยี่ยม)";
+                        stateColor = "#00e676"; setTrafficLight('green');
+                        newState = "green"; zoneColorName = "Green";
+                    } else if (currentHrv > limitRed) {
+                        statusText.innerText = "HIGH AROUSAL (เริ่มตื่นตัว/เครียด)";
+                        stateColor = "#ffeb3b"; setTrafficLight('yellow');
+                        newState = "yellow"; zoneColorName = "Yellow";
+                    } else {
+                        statusText.innerText = "DYSREGULATED (เสี่ยง Meltdown)";
+                        stateColor = "#ff4d4d"; setTrafficLight('red');
+                        newState = "red"; zoneColorName = "Red";
                     }
 
-                    // Log Data
+                    if (newState === "green" && (lastState === "yellow" || lastState === "red")) {
+                        playSuccessDing();
+                    }
+                    lastState = newState; 
+
+                    statusText.style.color = stateColor;
+                    document.getElementById('statusText').style.borderColor = stateColor;
+                    document.getElementById('trafficPanel').style.borderColor = stateColor;
+                    
+                    if (arousalChart) {
+                        arousalChart.data.datasets[0].borderColor = stateColor;
+                    }
+
                     let now = new Date();
-                    sessionLog.push({
-                        date: now.toISOString().split('T')[0],
-                        time: now.toLocaleTimeString('th-TH'),
-                        timestamp: Date.now(),
-                        hr: currentHR, hrv: currentHRV.toFixed(2), color: colorName
+                    let logDate = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, '0') + "-" + String(now.getDate()).padStart(2, '0');
+                    let logTime = now.toLocaleTimeString('th-TH');
+                    let unixTimestamp = Date.now(); 
+
+                    researchDataLog.push({
+                        date: logDate,
+                        time: logTime,
+                        timestamp: unixTimestamp,
+                        hr: hr,
+                        hrv: currentHrv.toFixed(2),
+                        color: zoneColorName 
                     });
                 }
+                if (arousalChart) { arousalChart.update(); }
+            } else {
+                document.getElementById('statusText').innerText = `กำลังรวบรวมข้อมูล... (${rrWindow.length}/${WINDOW_SIZE})`;
             }
         }
 
-        function startDailyCalibration() {
-            document.getElementById('calibModal').style.display = 'flex';
-            document.getElementById('statusText').innerText = "กำลังสร้าง Daily Baseline...";
-            calibDataHR = []; calibDataHRV = [];
-        }
+        // --- ส่วนการบันทึกข้อมูล (เพิ่มอัปเดต Local Storage) ---
+        document.getElementById('exportBtn').onclick = function() {
+            if (researchDataLog.length === 0) {
+                alert("❌ ยังไม่มีข้อมูลให้บันทึกครับ");
+                return;
+            }
 
-        function initChart() {
-            const ctx = document.getElementById('arousalChart').getContext('2d');
-            chart = new Chart(ctx, {
-                type: 'line',
-                data: { labels: Array.from({length: 80}, (_, i) => i), datasets: [{ label: 'HRV', data: hrvHistory, borderColor: '#4da6ff', borderWidth: 2, pointRadius: 0 }] },
-                options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x:{display:false}, y:{grid:{color:'#444'}} }, plugins:{legend:{display:false}, annotation:{annotations:{}}} }
-            });
-        }
-        function drawChartZones() {
-            chart.options.plugins.annotation.annotations = {
-                lineY: { type: 'line', yMin: dailyLimitYellow, yMax: dailyLimitYellow, borderColor: '#ffeb3b', borderDash: [5,5] },
-                lineR: { type: 'line', yMin: dailyLimitRed, yMax: dailyLimitRed, borderColor: '#ff4d4d', borderDash: [5,5] }
-            };
-            chart.update();
-        }
+            try {
+                // 1. อัปเดตฐานข้อมูล Baseline เดิม
+                let dbKey = `${childName}_med_${isMedicatedToday}`;
+                let oldData = db[dbKey] || { hr: 0, hrv: 0, count: 0 };
+                let newCount = oldData.count + 1;
+                db[dbKey] = {
+                    hr: ((oldData.hr * oldData.count) + dailyBaselineHR) / newCount,
+                    hrv: ((oldData.hrv * oldData.count) + baselineRmssd) / newCount,
+                    count: newCount
+                };
+                saveDB();
 
-        // --- 4. Export & Save Data ---
-        function exportCSV() {
-            if (sessionLog.length === 0) return alert("ยังไม่มีข้อมูลให้บันทึก");
+                // 2. ส่งออกไฟล์ CSV เหมือนเดิมเป๊ะ
+                let csvContent = "\uFEFFPatientName,PatientAge,Date,Time,Timestamp_MS,ArousalLevel,Heart Rate (BPM),HRV RMSSD (ms)\n";
+                let ageFormatted = `${childYears}Y${childMonths}M`;
+
+                researchDataLog.forEach(row => {
+                    csvContent += `${childName},${ageFormatted},${row.date},${row.time},${row.timestamp},${row.color},${row.hr},${row.hrv}\n`;
+                });
+
+                let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                let dateStr = new Date().toISOString().split('T')[0];
+                let fileName = `ArousalSense_${childName}_Med${isMedicatedToday}_${dateStr}.csv`;
+
+                if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+                    window.navigator.msSaveOrOpenBlob(blob, fileName);
+                } else {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = fileName;
+                    
+                    document.body.appendChild(a);
+                    a.click(); 
+                    
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                    }, 100);
+                }
+
+                alert(`✅ บันทึกข้อมูลวิจัยและประวัติลงฐานข้อมูลสำเร็จ!\nไฟล์ชื่อ: ${fileName}\n`);
             
-            // 1. Update Historical DB
-            let dbKey = `${patientProfile.id}_med_${patientProfile.isMedicated}`;
-            let oldData = db[dbKey] || { hr: 0, hrv: 0, count: 0 };
-            let newCount = oldData.count + 1;
-            db[dbKey] = {
-                hr: ((oldData.hr * oldData.count) + dailyBaselineHR) / newCount,
-                hrv: ((oldData.hrv * oldData.count) + dailyBaselineRMSSD) / newCount,
-                count: newCount
-            };
-            saveDB(); // Save cumulative average
+            } catch (err) {
+                alert("เกิดข้อผิดพลาดในการสร้างไฟล์: " + err);
+            }
+        };
 
-            // 2. Export strict CSV format
-            let csv = "\uFEFFPatientName,PatientAge,Date,Time,Timestamp_MS,ArousalLevel,Heart Rate (BPM),HRV RMSSD (ms)\n";
-            sessionLog.forEach(r => {
-                csv += `${patientProfile.id},${patientProfile.ageStr},${r.date},${r.time},${r.timestamp},${r.color},${r.hr},${r.hrv}\n`;
-            });
-
-            let blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            let a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `ArousalSense_${patientProfile.id}_Med${patientProfile.isMedicated}_${sessionLog[0].date}.csv`;
-            a.click();
-            alert("บันทึกข้อมูลและอัปเดตฐานข้อมูลสำเร็จ!");
+        function setupGraphZones() {
+            if(arousalChart && arousalChart.options.plugins && arousalChart.options.plugins.annotation) {
+                arousalChart.options.plugins.annotation.annotations = {
+                    zoneGreen: { type: 'box', yMin: limitYellow, yMax: baselineRmssd * 2.5, backgroundColor: 'rgba(0, 230, 118, 0.1)', borderWidth: 0 },
+                    zoneYellow: { type: 'box', yMin: limitRed, yMax: limitYellow, backgroundColor: 'rgba(255, 235, 59, 0.15)', borderWidth: 0 },
+                    zoneRed: { type: 'box', yMin: 0, yMax: limitRed, backgroundColor: 'rgba(255, 77, 77, 0.2)', borderWidth: 0 },
+                    lineYellow: { type: 'line', yMin: limitYellow, yMax: limitYellow, borderColor: '#ffeb3b', borderWidth: 2, borderDash: [5, 5] },
+                    lineRed: { type: 'line', yMin: limitRed, yMax: limitRed, borderColor: '#ff4d4d', borderWidth: 2, borderDash: [5, 5] },
+                    lineVerticalNow: { type: 'line', xMin: VISIBLE_POINTS - 1, xMax: VISIBLE_POINTS - 1, borderColor: 'rgba(255, 255, 255, 0.8)', borderWidth: 2, borderDash: [3, 3] }
+                };
+                arousalChart.update();
+            }
         }
     </script>
 </body>
